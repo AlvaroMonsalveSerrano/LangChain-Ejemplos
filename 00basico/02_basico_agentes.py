@@ -12,11 +12,11 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from dotenv import load_dotenv
 from langchain.agents import create_agent
 from deepagents import create_deep_agent
-from langchain.chat_models import init_chat_model
 from langchain.tools import tool
 from langgraph.checkpoint.memory import InMemorySaver
 
 import utils.logger
+from utils.agents import build_chat_model, invoke_agent
 
 load_dotenv()
 
@@ -94,14 +94,7 @@ def fetch_text_from_url(url: str) -> str:
 def build_model():
     """Crea el modelo de chat de Claude Haiku usado por ambos agentes."""
     logger.info("Creando modelo Claude Haiku")
-    return init_chat_model(
-        "claude-haiku-4-5-20251001",
-        model_provider="anthropic",
-        temperature=0.5,
-        timeout=600,
-        max_tokens=4096,
-        streaming=True,
-    )
+    return build_chat_model("claude-haiku-4-5-20251001")
 
 
 def build_agent(model, checkpointer):
@@ -126,19 +119,6 @@ def build_deep_agent(model, checkpointer):
     )
 
 
-def _invoke_agent(agent, label, thread_id):
-    """Invoca un agente capturando cualquier fallo de la llamada (red, API, rate limit)
-    para que no tumbe el script completo ni impida intentar el resto de agentes."""
-    try:
-        return agent.invoke(
-            {"messages": [{"role": "user", "content": CONTENT}]},
-            config={"configurable": {"thread_id": thread_id}},
-        )
-    except Exception:
-        logger.exception("Fallo al invocar el agente '%s' (thread_id=%s)", label, thread_id)
-        return None
-
-
 def main():
     """Ejecuta la misma consulta sobre The Great Gatsby con ambos agentes y compara resultados."""
     model = build_model()
@@ -149,10 +129,10 @@ def main():
 
     # Cada invocación usa un thread_id distinto para no compartir memoria entre agentes.
     logger.info("Invocando agente estándar (thread_id=great-gatsby-lc)")
-    agent_result = _invoke_agent(agent, "estándar", "great-gatsby-lc")
+    agent_result = invoke_agent(agent, CONTENT, "great-gatsby-lc", label="estándar", logger=logger)
 
     logger.info("Invocando deep agent (thread_id=great-gatsby-da)")
-    deep_agent_result = _invoke_agent(deep_agent, "deep", "great-gatsby-da")
+    deep_agent_result = invoke_agent(deep_agent, CONTENT, "great-gatsby-da", label="deep", logger=logger)
 
     if agent_result is not None:
         logger.info("Resultado del agente estándar: %s", agent_result["messages"][-1].content_blocks)

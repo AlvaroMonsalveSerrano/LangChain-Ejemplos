@@ -12,7 +12,7 @@ Sandbox de pruebas conceptuales con la librería [LangChain](https://python.lang
 ├── 01agentes/         # Módulos desarrollados: tools, contexto, streaming, middleware y subagentes
 │   └── context/       # Memoria (AGENTS.md) y skills usados por 04_agentes_gestion_contexto.py
 ├── 02modelos/         # Pendiente de desarrollo
-├── 03mensajes/        # Pendiente de desarrollo
+├── 03mensajes/        # Módulos desarrollados: mensajes tipados y tools vinculadas
 ├── 04herramientas/    # Pendiente de desarrollo
 ├── utils/
 │   ├── agents.py      # Helpers compartidos: construcción de modelo e invocación de agentes
@@ -21,7 +21,7 @@ Sandbox de pruebas conceptuales con la librería [LangChain](https://python.lang
 └── CLAUDE.md           # Orientación específica para Claude Code
 ```
 
-Cada carpeta numerada agrupa módulos de un mismo tema. `00basico/` y `01agentes/` ya tienen módulos implementados (ver [Módulos desarrollados](#módulos-desarrollados)); `02modelos/`, `03mensajes/` y `04herramientas/` siguen siendo carpetas reservadas para próximos ejemplos.
+Cada carpeta numerada agrupa módulos de un mismo tema. `00basico/`, `01agentes/` y `03mensajes/` ya tienen módulos implementados (ver [Módulos desarrollados](#módulos-desarrollados)); `02modelos/` y `04herramientas/` siguen siendo carpetas reservadas para próximos ejemplos.
 
 ---
 
@@ -53,7 +53,7 @@ El fichero `.env` (no versionado, ver `.gitignore`) debe definirse en la raíz d
 
 | Variable | Usada por | Descripción |
 |----------|-----------|-------------|
-| `ANTHROPIC_API_KEY` | Todos los módulos de `00basico/` y `01agentes/` | Credencial de Anthropic; los agentes actuales usan Claude Haiku. |
+| `ANTHROPIC_API_KEY` | Todos los módulos de `00basico/`, `01agentes/` y `03mensajes/` | Credencial de Anthropic; los agentes actuales usan Claude Haiku. |
 | `OPENAI_API_KEY` | Declarada como dependencia (`langchain-openai`) pero ningún módulo actual la usa todavía. | Necesaria si un módulo futuro usa modelos de OpenAI. |
 | `TAVILY_API_KEY` | Declarada como dependencia (`tavily-python`) pero ningún módulo actual la usa todavía. | Necesaria si un módulo futuro añade búsqueda web con Tavily. |
 | `LANGSMITH_API_KEY`, `LANGSMITH_TRACING`, `LANGSMITH_ENDPOINT`, `LANGSMITH_PROJECT` | Opcional, vía `utils/logger.py` | Activan trazas remotas en LangSmith cuando se configuran; si se omiten, el logging queda solo en local (stdout). |
@@ -81,6 +81,15 @@ El fichero `.env` (no versionado, ver `.gitignore`) debe definirse en la raíz d
 
 Los cinco módulos de `01agentes/` comparten `utils/agents.py::build_chat_model()` para construir el modelo de chat con los valores por defecto del repo; todos salvo `03_agentes_streaming.py` (streaming, invocación como generador) reutilizan también `utils/agents.py::invoke_agent()` para invocar el agente con manejo de errores homogéneo.
 
+### `03mensajes/`
+
+| Módulo | Descripción |
+|--------|-------------|
+| [`03mensajes/01_mensajes.py`](03mensajes/01_mensajes.py) | Invoca un modelo de chat directamente (sin `create_agent`) con un historial construido a mano combinando `SystemMessage`, `HumanMessage` y `AIMessage` de `langchain.messages`. Loggea la respuesta y `response.usage_metadata` (tokens de entrada, salida y total). |
+| [`03mensajes/02_mensajes_herramientas.py`](03mensajes/02_mensajes_herramientas.py) | Extiende `01_mensajes.py` vinculando una tool al modelo con `model.bind_tools([search])` en vez de usar un agente. Inspecciona `response.tool_calls` (nombre, argumentos e id de cada llamada) en vez de asumir que `response.text` trae la respuesta final, ya que un turno que solo llama a una tool devuelve texto vacío. |
+
+A diferencia de `01agentes/`, los módulos de `03mensajes/` invocan el modelo de chat directamente (`model.invoke(...)` / `model.bind_tools(...).invoke(...)`), sin pasar por `create_agent`; ambos reutilizan `utils/agents.py::build_chat_model()`.
+
 ---
 
 ## Convenciones observadas en los módulos actuales
@@ -107,6 +116,7 @@ python 01agentes/03_agentes_streaming.py
 # Ejecutar todos los módulos de una carpeta en orden
 for f in 00basico/0*.py; do echo "=== $f ==="; python "$f"; done
 for f in 01agentes/0*.py; do echo "=== $f ==="; python "$f"; done
+for f in 03mensajes/0*.py; do echo "=== $f ==="; python "$f"; done
 ```
 
 > Todos los módulos loggean su resultado por stdout (nunca `print`). Asegúrate de que `.env` está configurado antes de ejecutarlos.
@@ -125,7 +135,8 @@ El patrón previsto (documentado en `CLAUDE.md`) es usar `pytest` con un LLM sim
 
 - ✅ `00basico/` — 2 módulos de agentes implementados y verificados.
 - ✅ `01agentes/` — 5 módulos implementados y verificados: tool + salida estructurada, contexto de ejecución, streaming, gestión de contexto por middleware, y planificación + delegación en subagentes.
-- 🚧 `02modelos/`, `03mensajes/`, `04herramientas/` — carpetas creadas, sin contenido todavía.
+- ✅ `03mensajes/` — 2 módulos implementados y verificados: mensajes tipados (`SystemMessage`/`HumanMessage`/`AIMessage`) y tools vinculadas con `bind_tools`.
+- 🚧 `02modelos/`, `04herramientas/` — carpetas creadas, sin contenido todavía.
 - 🚧 `tests/` — sin implementar.
 
 ---

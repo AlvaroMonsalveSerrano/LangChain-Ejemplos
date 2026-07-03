@@ -23,6 +23,7 @@ python 00basico/01_basico_agentes.py
 # Ejecutar todos los módulos de una carpeta en orden
 for f in 00basico/0*.py; do python "$f"; done
 for f in 01agentes/0*.py; do python "$f"; done
+for f in 03mensajes/0*.py; do python "$f"; done
 ```
 
 No hay tests implementados todavía (ver sección Tests en README.md).
@@ -42,8 +43,10 @@ Sandbox de pruebas conceptuales para LangChain. Cada fichero numerado dentro de 
 | `01agentes/03_agentes_streaming.py` | Sustituye `agent.invoke` por `agent.stream(..., stream_mode="values")` para procesar el estado del grafo paso a paso. |
 | `01agentes/04_agentes_gestion_contexto.py` | Gestiona contexto con middleware de `deepagents` (`FilesystemMiddleware`, `SummarizationMiddleware`, `MemoryMiddleware`, `SkillsMiddleware`) sobre un `FilesystemBackend` en `01agentes/context/`. |
 | `01agentes/05_agentes_planificacion_delegacion.py` | Añade planificación (`TodoListMiddleware`) y delegación en subagentes efímeros (`SubAgentMiddleware`) sobre un `StateBackend` compartido. |
+| `03mensajes/01_mensajes.py` | Invoca un modelo de chat directamente (sin `create_agent`) con un historial de `SystemMessage`/`HumanMessage`/`AIMessage`; loggea `response.usage_metadata`. |
+| `03mensajes/02_mensajes_herramientas.py` | Vincula una tool al modelo con `model.bind_tools([search])` (sin agente) e inspecciona `response.tool_calls` en vez de `response.text`, que llega vacío cuando el turno solo llama a una tool. |
 
-Las carpetas `02modelos/`, `03mensajes/` y `04herramientas/` existen pero están vacías, pendientes de desarrollo.
+Las carpetas `02modelos/` y `04herramientas/` existen pero están vacías, pendientes de desarrollo.
 
 ## Estilo de Python
 
